@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer with Excel Export</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #timer {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h1>Elapsed Time Timer</h1>
+    <button class="button" onclick="startTimer('Break')">Break</button>
+    <button class="button" onclick="startTimer('Lunch')">Lunch</button>
+    <button class="button" onclick="displayTotalTime()">TC</button>
+    <button class="button" onclick="stopTimer()">End</button>
+    <div id="timer"></div>
+
+    <script>
+        let timerInterval;
+        let elapsedSeconds = 0;
+        let currentLabel = '';
+        const records = [];
+
+        function startTimer(label) {
+            clearInterval(timerInterval);
+            currentLabel = label;
+            let timerDisplay = document.getElementById('timer');
+            elapsedSeconds = 0;
+
+            function updateTimer() {
+                let mins = Math.floor(elapsedSeconds / 60);
+                let secs = elapsedSeconds % 60;
+                timerDisplay.textContent = `${label} time elapsed: ${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                elapsedSeconds++;
+            }
+
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('timer').textContent = "Timer ended.";
+            saveRecord(currentLabel, elapsedSeconds);
+        }
+
+        function saveRecord(label, seconds) {
+            let mins = Math.floor(seconds / 60);
+            let secs = seconds % 60;
+            records.push({
+                Activity: label,
+                Time: `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+            });
+            exportToExcel(records);
+        }
+
+        function displayTotalTime() {
+            let totalSeconds = records.reduce((acc, record) => {
+                let timeParts = record.Time.split(':');
+                let minutes = parseInt(timeParts[0]);
+                let seconds = parseInt(timeParts[1]);
+                return acc + (minutes * 60) + seconds;
+            }, 0);
+            
+            let totalMins = Math.floor(totalSeconds / 60);
+            let totalSecs = totalSeconds % 60;
+
+            document.getElementById('timer').textContent = `Total time: ${String(totalMins).padStart(2, '0')}:${String(totalSecs).padStart(2, '0')}`;
+        }
+
+        function exportToExcel(records) {
+            const ws = XLSX.utils.json_to_sheet(records);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Records");
+            XLSX.writeFile(wb, "timer_records.xlsx");
+        }
+    </script>
+</body>
+</html>
+
